@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Cart</title>
+
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.9.0/fonts/remixicon.css" rel="stylesheet"/>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<style>
+
+
+body{
+font-family:Arial;
+padding:40px;
+}
+
+.cart-item{
+display:flex;
+align-items:center;
+gap:20px;
+margin-bottom:20px;
+border-bottom:1px solid #ddd;
+padding-bottom:10px;
+}
+
+.cart-item img{
+width:80px;
+}
+
+.remove{
+background:red;
+color:white;
+border:none;
+padding:6px 12px;
+cursor:pointer;
+}
+
+.checkout{
+margin-top:20px;
+padding:10px 20px;
+background:black;
+color:white;
+border:none;
+cursor:pointer;
+}
+
+.empty{
+font-size:18px;
+color:#666;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Your Cart</h1>
+
+<div class="cart-items"></div>
+
+<h2>Total: ₹<span id="total">0</span></h2>
+
+<button class="checkout" id="payBtn">Checkout</button>
+
+<script>
+
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+let container = document.querySelector(".cart-items");
+
+let total = 0;
+
+
+// EMPTY CART
+
+if(cart.length === 0){
+
+container.innerHTML = "<p class='empty'>Your Cart Is Empty</p>";
+
+document.querySelector(".checkout").style.display="none";
+
+}
+
+
+// SHOW CART ITEMS
+
+cart.forEach((item,index)=>{
+
+let div = document.createElement("div");
+
+div.classList.add("cart-item");
+
+div.innerHTML = `
+
+<img src="${item.image}">
+
+<p>${item.title}</p>
+
+<p>₹${item.price}</p>
+
+<p>Qty: ${item.quantity}</p>
+
+<button class="remove" onclick="removeItem(${index})">Remove</button>
+
+`;
+
+container.appendChild(div);
+
+total += item.price * item.quantity;
+
+});
+
+document.getElementById("total").innerText = total;
+
+
+
+// REMOVE ITEM
+
+function removeItem(index){
+
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+cart.splice(index,1);
+
+localStorage.setItem("cart",JSON.stringify(cart));
+
+location.reload();
+
+}
+
+
+
+
+
+document.getElementById("payBtn").onclick = function(){
+
+let total = document.getElementById("total").innerText;
+
+let options = {
+
+"key": "rzp_test_SRqZDHKDtt2mLl", // yaha apna Razorpay test key daalna
+
+"amount": total * 100, // paisa convert
+
+"currency": "INR",
+
+"name": "Web Bags Store",
+
+"description": "Bag Purchase",
+
+"image": "https://yourlogo.com/logo.png",
+
+handler: function (response){
+
+alert("Payment Successful 🎉");
+
+localStorage.removeItem("cart");
+
+window.location.href="index.html";
+
+},
+
+prefill: {
+
+name: "Customer",
+
+email: "customer@email.com",
+
+contact: "9999999999"
+
+},
+
+theme: {
+
+color: "#000"
+
+}
+
+};
+
+let rzp = new Razorpay(options);
+
+rzp.open();
+
+}
+
+
+
+
+</script>
+
+
+
+
+
+
+
+</body>
+</html>
