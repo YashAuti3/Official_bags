@@ -33,7 +33,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
 
 function App() {
   return (
-    <ApiProvider baseURL='http://localhost:5002/api'>
+    <ApiProvider baseURL='https://official-bags-5.onrender.com'>
       <AppAuthProvider>
         <AppDataProvider>
           <CartProvider>
