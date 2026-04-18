@@ -27,7 +27,7 @@ app.use(helmet());
 
 // CORS Configuration
 const allowedOrigins = [
-  'http://localhost:3000',
+  'https://official-bags.vercel.app',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
