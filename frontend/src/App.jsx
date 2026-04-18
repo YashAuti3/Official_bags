@@ -31,9 +31,14 @@ import UserProtectedRoute from './components/common/UserProtectedRoute.jsx';
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
 import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
 
+const apiBaseUrl = (
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://official-bags-5.onrender.com/api'
+).replace(/\/+$/, '');
+
 function App() {
   return (
-    <ApiProvider baseURL='https://official-bags-5.onrender.com'>
+    <ApiProvider baseURL={apiBaseUrl}>
       <AppAuthProvider>
         <AppDataProvider>
           <CartProvider>
