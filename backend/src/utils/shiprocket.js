@@ -1,5 +1,5 @@
 const axios = require("axios");
-const { getToken } = require("../config/shiprocket");
+const { getToken } = require("../config/shipRocket");
 
 const createShipment = async (order) => {
     const token = await getToken();
