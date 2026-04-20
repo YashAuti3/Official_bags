@@ -175,8 +175,13 @@ exports.removeItemFromCart = asyncHandler(async (req, res) => {
 });
 
 exports.createRazorpayOrder = asyncHandler(async (req, res) => {
-  const { amount } = req.body;
-  if (!amount) throw new ApiError(STATUS.BAD_REQUEST, 'Amount is required');
+  const cart = await Order.findOne({ user: req.user._id, status: 'Cart' });
+  if (!cart || !cart.items?.length) {
+    throw new ApiError(STATUS.BAD_REQUEST, 'Your cart is empty');
+  }
+
+  const amount = cart.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0);
+  if (!amount) throw new ApiError(STATUS.BAD_REQUEST, 'Cart total is invalid');
 
   const razorpayOrder = await createOrder(amount);
   res.json(new ApiResponse(STATUS.OK, {
@@ -243,9 +248,7 @@ exports.createRazorpayOrder = asyncHandler(async (req, res) => {
 // });
 
 exports.verifyAndPlaceOrder = asyncHandler(async (req, res) => {
-  const { items, totalAmount, shippingAddress, paymentId, razorpayOrderId, razorpaySignature } = req.body;
-
-  if (!items?.length) throw new ApiError(STATUS.BAD_REQUEST, 'Items required');
+  const { shippingAddress, paymentId, razorpayOrderId, razorpaySignature } = req.body;
   if (!paymentId || !razorpayOrderId || !razorpaySignature) throw new ApiError(STATUS.BAD_REQUEST, 'Payment info required');
 
   if (!shippingAddress || !shippingAddress.street || !shippingAddress.city || !shippingAddress.state || !shippingAddress.pincode || !shippingAddress.phone) {
@@ -256,28 +259,22 @@ exports.verifyAndPlaceOrder = asyncHandler(async (req, res) => {
   if (!isValid) throw new ApiError(STATUS.BAD_REQUEST, 'Invalid signature.');
 
   let order = await Order.findOne({ user: req.user._id, status: 'Cart' });
-
-  if (order) {
-    order.items = items;
-    order.totalAmount = totalAmount;
-    order.shippingAddress = shippingAddress;
-    order.paymentId = paymentId;
-    order.razorpayOrderId = razorpayOrderId;
-    order.paymentStatus = 'Paid';
-    order.status = 'Processing';
-    await order.save();
-  } else {
-    order = await Order.create({
-      user: req.user._id,
-      items,
-      totalAmount,
-      shippingAddress,
-      paymentId,
-      razorpayOrderId,
-      paymentStatus: 'Paid',
-      status: 'Processing',
-    });
+  if (!order || !order.items?.length) {
+    throw new ApiError(STATUS.BAD_REQUEST, 'Cart not found for this payment');
   }
+
+  const totalAmount = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0);
+  if (!totalAmount) {
+    throw new ApiError(STATUS.BAD_REQUEST, 'Cart total is invalid');
+  }
+
+  order.totalAmount = totalAmount;
+  order.shippingAddress = shippingAddress;
+  order.paymentId = paymentId;
+  order.razorpayOrderId = razorpayOrderId;
+  order.paymentStatus = 'Paid';
+  order.status = 'Processing';
+  await order.save();
 
   // 🔥 IMPORTANT: populate before Shiprocket
   await order.populate("user", "name email phone");

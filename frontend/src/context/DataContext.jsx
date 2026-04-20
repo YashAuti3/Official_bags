@@ -121,8 +121,8 @@ export function AppDataProvider({ children }) {
 
 
   // Checkout
-  const createRazorpayOrder = async (amount) => {
-    return await post('/orders/create-razorpay-order', { amount });
+  const createRazorpayOrder = async () => {
+    return await post('/orders/create-razorpay-order');
   };
 
   const verifyPayment = async (payload) => {
