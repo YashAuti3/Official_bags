@@ -182,8 +182,29 @@ exports.createRazorpayOrder = asyncHandler(async (req, res) => {
 
   const amount = cart.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0);
   if (!amount) throw new ApiError(STATUS.BAD_REQUEST, 'Cart total is invalid');
+  if (amount < 10) {
+    throw new ApiError(STATUS.BAD_REQUEST, 'Minimum Razorpay checkout amount is Rs. 10');
+  }
 
-  const razorpayOrder = await createOrder(amount);
+  let razorpayOrder;
+  try {
+    razorpayOrder = await createOrder(amount);
+  } catch (error) {
+    const razorpayMessage =
+      error?.error?.description ||
+      error?.response?.data?.error?.description ||
+      error?.message ||
+      'Failed to create Razorpay order';
+
+    console.error('Razorpay order creation failed:', {
+      message: razorpayMessage,
+      statusCode: error?.statusCode || error?.response?.status,
+      amount,
+    });
+
+    throw new ApiError(STATUS.BAD_REQUEST, razorpayMessage);
+  }
+
   res.json(new ApiResponse(STATUS.OK, {
     razorpayOrder,
     razorpayKey: process.env.RAZORPAY_KEY_ID
