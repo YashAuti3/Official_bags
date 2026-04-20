@@ -46,14 +46,15 @@ export default function CartPage() {
     try {
       setLoading(true);
       // 1. Create Razorpay Order
-      const { razorpayOrder, razorpayKey } = await createRazorpayOrder(cartTotal);
+      const { razorpayOrder, razorpayKey } = await createRazorpayOrder();
 
       if (!razorpayKey) throw new Error('Razorpay key not provided by the server');
+      if (!window.Razorpay) throw new Error('Razorpay checkout SDK failed to load');
 
       const options = {
         key: razorpayKey,
         amount: razorpayOrder.amount,
-        currency: 'INR',
+        currency: razorpayOrder.currency || 'INR',
         name: 'WebBags Premium',
         description: 'Quality Bags Purchase',
         order_id: razorpayOrder.id,
@@ -61,15 +62,6 @@ export default function CartPage() {
           try {
             // 2. Verify and Place Order
             await verifyPayment({
-              items: cartItems.map(i => ({ 
-                  product: i._id || i.id, 
-                  quantity: i.quantity, 
-                  price: i.price, 
-                  selectedColor: i.selectedColor,
-                  title: i.title,
-                  image: i.image
-              })),
-              totalAmount: cartTotal,
               shippingAddress: shippingAddress,
               paymentId: response.razorpay_payment_id,
               razorpayOrderId: response.razorpay_order_id,
@@ -90,14 +82,24 @@ export default function CartPage() {
           email: user.email,
           contact: user.phone || ''
         },
+        notes: {
+          customerId: user._id || user.id || '',
+        },
+        modal: {
+          ondismiss: () => setLoading(false),
+        },
         theme: { color: '#000000' }
       };
 
       const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', () => {
+        setLoading(false);
+        alert('Payment failed. Please try again.');
+      });
       rzp.open();
     } catch (err) {
       console.error('Checkout failed:', err);
-      alert('Payment initialization failed');
+      alert(err?.message || 'Payment initialization failed');
     } finally {
       setLoading(false);
     }
